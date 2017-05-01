@@ -12,6 +12,7 @@
 #include <Effects.h>
 #include <CommonStates.h>
 #include <SimpleMath.h>
+#include <Model.h>
 
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
@@ -80,4 +81,21 @@ private:
 	//デバックカメラ
 	std::unique_ptr<DebugCamera>m_debugCamera;
 
+	//エフェクトファクトリー
+	std::unique_ptr<DirectX::EffectFactory> m_factory;
+
+	//地面モデル
+	std::unique_ptr<DirectX::Model> m_modelGround;
+
+	//天球モデル
+	std::unique_ptr<DirectX::Model> m_modelSkydome;
+
+	//球モデル
+	std::unique_ptr<DirectX::Model> m_modelBall;
+
+	//球のワールド行列
+	DirectX::SimpleMath::Matrix m_worldBall[20];
+
+	//球の回転変数
+	float rotateball;
 };

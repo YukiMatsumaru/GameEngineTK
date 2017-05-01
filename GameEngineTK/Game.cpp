@@ -50,8 +50,9 @@ void Game::Initialize(HWND window, int width, int height)
 
 	m_view = Matrix::CreateLookAt(Vector3(2.f, 2.f, 2.f),
 		Vector3::Zero, Vector3::UnitY);
+
 	m_proj = Matrix::CreatePerspectiveFieldOfView(XM_PI / 4.f,
-		float(m_outputWidth) / float(m_outputHeight), 0.1f, 10.f);
+		float(m_outputWidth) / float(m_outputHeight), 0.1f, 500.f);
 
 	m_effect->SetView(m_view);
 	m_effect->SetProjection(m_proj);
@@ -70,6 +71,20 @@ void Game::Initialize(HWND window, int width, int height)
 
 	//デバックカメラ生成
 	m_debugCamera = std::make_unique<DebugCamera>(m_outputWidth,m_outputHeight);
+
+	//エフェクトファクトリ生成
+	m_factory = std::make_unique<EffectFactory>(m_d3dDevice.Get());
+
+	//テクスチャの読み込みパス
+	m_factory->SetDirectory(L"Resources");
+
+	//モデルの読み込み
+	m_modelGround = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources/ground1m.cmo", *m_factory);
+	m_modelSkydome = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources/skydome.cmo", *m_factory);
+	m_modelBall = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources/ball.cmo", *m_factory);
+
+	//球の回転変数の初期化
+	rotateball = 0.0f;
 
 }
 
@@ -98,23 +113,72 @@ void Game::Update(DX::StepTimer const& timer)
 	//ビュー行列の取得
 	m_view = m_debugCamera->GetCameraMatrix();
 
+	//球のワールド行列の計算
+	//スケーリング
+	Matrix scalemat = Matrix::CreateScale(1.0f);
+
+	//ロール
+	Matrix rotmatZ = Matrix::CreateRotationZ(XMConvertToRadians(0.0f));
+
+	//ピッチ（仰角）
+	Matrix rotmatX = Matrix::CreateRotationX(XMConvertToRadians(0.0f));
+
+	//ヨー（方位角）
+	Matrix rotmatY = Matrix::CreateRotationY(XMConvertToRadians(0.0f));
+
+	//回転行列（合成）
+	Matrix rotmat = rotmatZ*rotmatX*rotmatY;
+
+	//平行移動
+	Matrix transmat = Matrix::CreateTranslation(20.0f, 0, .0);
+
+	//球の回転
+	rotateball += 0.5f;
+	
+	//ワールド行列の合成
+	for(int i = 0; i < 20; i++)
+	{
+		if (i < 10)
+		{
+			//方位角の設定
+			rotmatY = Matrix::CreateRotationY(XMConvertToRadians(i * 36.0f + rotateball));
+		}
+		else
+		{
+			//平行移動
+			transmat = Matrix::CreateTranslation(40.0f, 0, .0);
+
+			//方位角の設定
+			rotmatY = Matrix::CreateRotationY(XMConvertToRadians(i * 36.0f - rotateball));
+		}
+
+		//回転行列（合成）
+		Matrix rotmat = rotmatZ*rotmatX*rotmatY;
+
+		//ワールド行列の計算
+		m_worldBall[i] = scalemat * transmat * rotmat;
+
+	}
+	
 }
 
 // Draws the scene.
 void Game::Render()
 {
+	//頂点インデックス
 	uint16_t indices[] =
 	{
 		0,1,2,
 		2,1,3
 	};
 
+	//頂点座標
 	VertexPositionNormal vertices[] =
-	{
-		{ Vector3(-1.0f,1.0f,0.0f), Vector3(0.0f,0.0f,1.0f) },
-		{ Vector3(-1.0f,-1.0f,0.0f),Vector3(0.0f,0.0f,1.0f) },
-		{ Vector3(1.0f,1.0f,0.0f),  Vector3(0.0f,0.0f,1.0f) },
-		{ Vector3(1.0f,-1.0f,0.0f), Vector3(0.0f,0.0f,1.0f) },
+	{				//座標					//法線方向ベクトル
+		{ Vector3(-1.0f,1.0f ,0.0f), Vector3( 0.0f,0.0f,1.0f) },
+		{ Vector3(-1.0f,-1.0f,0.0f), Vector3( 0.0f,0.0f,1.0f) },
+		{ Vector3(1.0f,1.0f,  0.0f), Vector3( 0.0f,0.0f,1.0f) },
+		{ Vector3(1.0f,-1.0f, 0.0f), Vector3( 0.0f,0.0f,1.0f) },
 	};
 
     // Don't try to render anything before the first Update.
@@ -141,6 +205,18 @@ void Game::Render()
 	m_effect->Apply(m_d3dContext.Get());
 	m_d3dContext->IASetInputLayout(m_inputLayout.Get());
 
+	//地面モデルの描画
+	m_modelGround->Draw(m_d3dContext.Get(),m_states,m_world,m_view,m_proj);
+
+	//天球モデルの描画
+	m_modelSkydome->Draw(m_d3dContext.Get(), m_states, m_world, m_view, m_proj);
+
+	//球モデルの描画
+	for (int i = 0; i < 20; i++)
+	{
+		m_modelBall->Draw(m_d3dContext.Get(), m_states, m_worldBall[i], m_view, m_proj);
+	}
+
 	m_batch->Begin();
 	/*m_batch->DrawLine(
 		VertexPositionColor(SimpleMath::Vector3(0,0,0),SimpleMath::Color(1,1,1)), 
@@ -151,13 +227,13 @@ void Game::Render()
 	VertexPositionColor v2(Vector3(500, 0, 0), Colors::Red);
 	VertexPositionColor v3(Vector3(0, 0, 0), Colors::Red);*/
 
-	VertexPositionColor v1(Vector3(0.f, 0.5f, 0.5f), Colors::AliceBlue);
+	/*VertexPositionColor v1(Vector3(0.f, 0.5f, 0.5f), Colors::AliceBlue);
 	VertexPositionColor v2(Vector3(0.5f, -0.5f, 0.5f), Colors::AliceBlue);
-	VertexPositionColor v3(Vector3(-0.5f, -0.5f, 0.5f), Colors::AliceBlue);
+	VertexPositionColor v3(Vector3(-0.5f, -0.5f, 0.5f), Colors::AliceBlue);*/
 
 	//m_batch->DrawTriangle(v1, v2, v3);
 
-	m_batch->DrawIndexed(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST,indices, 6, vertices, 4);
+	//m_batch->DrawIndexed(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST,indices, 6, vertices, 4);
 
 	m_batch->End();
 
