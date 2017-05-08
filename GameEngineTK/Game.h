@@ -13,6 +13,7 @@
 #include <CommonStates.h>
 #include <SimpleMath.h>
 #include <Model.h>
+#include <Keyboard.h>
 
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
@@ -93,9 +94,54 @@ private:
 	//球モデル
 	std::unique_ptr<DirectX::Model> m_modelBall;
 
-	//球のワールド行列
+	//ティーポットモデル
+	std::unique_ptr<DirectX::Model> m_modelTeapot;
+
+	//タンクモデル
+	std::unique_ptr<DirectX::Model> m_modeltank;
+
+	//ワールド行列
 	DirectX::SimpleMath::Matrix m_worldBall[20];
+
+	//ワールド行列
+	DirectX::SimpleMath::Matrix m_worldTeapot[20];
 
 	//球の回転変数
 	float rotateball;
+
+	//ティーポットの平行移動
+	float x[20],z[20];
+
+	//ティーポットの距離
+	float range;
+
+	//ティーポットの角度
+	float angle;
+
+	//フレームカウント
+	int frame;
+	
+	//キーボード
+	std::unique_ptr<DirectX::Keyboard> m_keyboard;
+
+	//自機の座標
+	DirectX::SimpleMath::Vector3 tank_pos;
+
+	//自機の回転角
+	float tank_angle;
+
+	//自機のワールド行列
+	DirectX::SimpleMath::Matrix tank_world;
+
+	DirectX::SimpleMath::Matrix scalemat;
+
+	DirectX::SimpleMath::Matrix rotmatZ;
+	DirectX::SimpleMath::Matrix rotmatX;
+	DirectX::SimpleMath::Matrix rotmatY;
+
+	DirectX::SimpleMath::Matrix rotmat;
+	DirectX::SimpleMath::Matrix transmat;
+
+	
+
 };

@@ -79,12 +79,61 @@ void Game::Initialize(HWND window, int width, int height)
 	m_factory->SetDirectory(L"Resources");
 
 	//モデルの読み込み
-	m_modelGround = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources/ground1m.cmo", *m_factory);
+	m_modelGround = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources/ground200m.cmo", *m_factory);
 	m_modelSkydome = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources/skydome.cmo", *m_factory);
 	m_modelBall = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources/ball.cmo", *m_factory);
 
+	m_modelTeapot = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources/Teapot.cmo", *m_factory);
+
+	m_modeltank = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources/tanc.cmo", *m_factory);
+
+	//キーボードの初期化
+	m_keyboard = std::make_unique<Keyboard>();
+
 	//球の回転変数の初期化
 	rotateball = 0.0f;
+
+	//ティーポットの平行移動の初期化
+	for (int i = 0; i < 20; i++)
+	{
+		x[i] = 0.0f;
+		z[i] = 0.0f;
+	}
+
+	//ティーポットの距離の初期化
+	range = 0.0f;
+
+	//ティーポットの角度の初期化
+	angle = 0.0f;
+
+	//タンクの角度の初期化
+	tank_angle = 0.0f;
+
+	//ティーポットの設定
+	scalemat = Matrix::CreateScale(0.1f);
+
+	//ワールド行列の計算
+	for (int i = 0; i < 20; i++)
+	{
+
+		angle = rand() / XM_2PI;
+
+		range = rand() % 100;
+
+		x[i] = (float)cosf(angle)*range;
+
+		z[i] = (float)sinf(angle)*range;
+
+		rotmatY = Matrix::CreateRotationY(XMConvertToRadians(i * 0.5f));
+		
+		transmat = Matrix::CreateTranslation(x[i], 0, z[i]);
+
+		m_worldTeapot[i] = scalemat *rotmatY* transmat;
+
+	}
+
+	//フレームカウントの初期化
+	frame = 0;
 
 }
 
@@ -115,7 +164,7 @@ void Game::Update(DX::StepTimer const& timer)
 
 	//球のワールド行列の計算
 	//スケーリング
-	Matrix scalemat = Matrix::CreateScale(1.0f);
+	Matrix scalemat = Matrix::CreateScale(0.5f);
 
 	//ロール
 	Matrix rotmatZ = Matrix::CreateRotationZ(XMConvertToRadians(0.0f));
@@ -157,9 +206,79 @@ void Game::Update(DX::StepTimer const& timer)
 
 		//ワールド行列の計算
 		m_worldBall[i] = scalemat * transmat * rotmat;
+	}
+
+	//ワールド行列の計算
+	for (int i = 0; i < 20; i++)
+	{
+
+		rotmatY = Matrix::CreateRotationY(XMConvertToRadians(frame));
+
+		transmat = Matrix::CreateTranslation(x[i], 0, z[i]);
+
+		m_worldTeapot[i] = scalemat *rotmatY* transmat;
 
 	}
+
+	//フレームを増やす
+	frame++;
+
+	//タンクの移動処理
 	
+	//キーボードの状態取得処理
+	Keyboard::State kb = m_keyboard->GetState();
+
+	//Aキーが押されたら
+	if (kb.A)
+	{
+		//自機の角度を変更
+		tank_angle += 0.03f;
+	}
+
+	//Dキーが押されたら
+	if (kb.D)
+	{
+		//自機の角度を変更
+		tank_angle -= 0.03f;
+	}
+
+	//Wキーが押されたら
+	if (kb.W)
+	{
+		//移動ベクトル(Z座標前進)
+		Vector3 moveV(0, 0, -0.1f);
+
+		//移動量ベクトルを自機の角度分回転させる
+		rotmat = Matrix::CreateRotationY(tank_angle);
+		moveV = Vector3::TransformNormal(moveV, rotmat);
+
+		//自機の座標を移動
+		tank_pos += moveV;
+	}
+
+	//Sキーが押されたら
+	if (kb.S)
+	{
+		//移動ベクトル(Z座標後退)
+		Vector3 moveV(0, 0, 0.1f);
+
+		//移動量ベクトルを自機の角度分回転させる
+		rotmat = Matrix::CreateRotationY(tank_angle);
+		moveV = Vector3::TransformNormal(moveV, rotmat);
+
+		//自機の座標を移動
+		tank_pos += moveV;
+	}
+
+	{//自機のワールド行列の計算
+		rotmat = Matrix::CreateRotationY(tank_angle);
+
+		Matrix transmat = Matrix::CreateTranslation(tank_pos);
+
+		//ワールド行列を合成
+		tank_world = rotmat * transmat;
+
+	}
 }
 
 // Draws the scene.
@@ -206,16 +325,26 @@ void Game::Render()
 	m_d3dContext->IASetInputLayout(m_inputLayout.Get());
 
 	//地面モデルの描画
-	m_modelGround->Draw(m_d3dContext.Get(),m_states,m_world,m_view,m_proj);
+	m_modelGround->Draw(m_d3dContext.Get(),m_states,Matrix::Identity,m_view,m_proj);
 
 	//天球モデルの描画
-	m_modelSkydome->Draw(m_d3dContext.Get(), m_states, m_world, m_view, m_proj);
+	m_modelSkydome->Draw(m_d3dContext.Get(), m_states,Matrix::Identity, m_view, m_proj);
+
+	//タンクモデルの描画
+	m_modeltank->Draw(m_d3dContext.Get(), m_states, tank_world, m_view, m_proj);
+
+
+	//ティーポットの描画
+	/*for (int i = 0; i < 20; i++)
+	{
+		m_modelTeapot->Draw(m_d3dContext.Get(), m_states, m_worldTeapot[i], m_view, m_proj);
+	}*/
 
 	//球モデルの描画
-	for (int i = 0; i < 20; i++)
+	/*for (int i = 0; i < 20; i++)
 	{
 		m_modelBall->Draw(m_d3dContext.Get(), m_states, m_worldBall[i], m_view, m_proj);
-	}
+	}*/
 
 	m_batch->Begin();
 	/*m_batch->DrawLine(
