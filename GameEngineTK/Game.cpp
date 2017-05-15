@@ -87,6 +87,8 @@ void Game::Initialize(HWND window, int width, int height)
 
 	m_modeltank = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources/tanc.cmo", *m_factory);
 
+	m_Camera = std::make_unique<Followcamera>(m_outputWidth, m_outputHeight);
+
 	//キーボードの初期化
 	m_keyboard = std::make_unique<Keyboard>();
 
@@ -160,8 +162,47 @@ void Game::Update(DX::StepTimer const& timer)
 	m_debugCamera->Update();
 	
 	//ビュー行列の取得
-	m_view = m_debugCamera->GetCameraMatrix();
+	//m_view = m_debugCamera->GetCameraMatrix();
 
+	{//自機に追従するカメラ
+		m_Camera->SetTargetpos(tank_pos);
+		m_Camera->SetTargetAngle(tank_angle);
+
+		//カメラの更新
+		m_Camera->Update();
+		m_view = m_Camera->GetView();
+		m_proj = m_Camera->GetProj();
+	}
+	
+	/*//視点
+	Vector3 eyepos(0,0,5.0f);
+	//注視点
+	Vector3 refpos(0, 0, 0);
+	//上方向ベクトル
+	static float angle = 0.0f;
+	angle += 0.1f;
+	Vector3 upvec(cosf(angle), sinf(angle), 0);
+
+	upvec.Normalize();	//ベクトルの正規化(長さを1にする)
+
+	//ビュー行列を生成
+	m_view = Matrix::CreateLookAt(eyepos, refpos, upvec);*/
+
+	/*//垂直方向視野角
+	float fovY = XMConvertToRadians(60.0f);
+
+	//アスペクト比(横・縦の比率)
+	float aspect = (float)m_outputWidth / m_outputHeight;
+
+	//手前の表示限界距離
+	float nearclip = 0.1f;
+
+	//奥の表示限界距離
+	float farclip = 1000.0f;
+
+	//射影行列の生成(透視投影)
+	m_proj = Matrix::CreatePerspectiveFieldOfView(fovY, aspect, nearclip, farclip);*/
+	
 	//球のワールド行列の計算
 	//スケーリング
 	Matrix scalemat = Matrix::CreateScale(0.5f);

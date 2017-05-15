@@ -15,6 +15,8 @@
 #include <Model.h>
 #include <Keyboard.h>
 
+#include "FollowCamera.h"
+
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
 class Game
@@ -142,6 +144,6 @@ private:
 	DirectX::SimpleMath::Matrix rotmat;
 	DirectX::SimpleMath::Matrix transmat;
 
-	
-
+	//ƒJƒƒ‰
+	std::unique_ptr<Followcamera> m_Camera;
 };
