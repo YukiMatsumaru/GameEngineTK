@@ -87,10 +87,12 @@ void Game::Initialize(HWND window, int width, int height)
 
 	m_modeltank = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources/tanc.cmo", *m_factory);
 
+	//キーボードの初期化
+	keyboard = std::make_unique<Keyboard>();
+
 	m_Camera = std::make_unique<Followcamera>(m_outputWidth, m_outputHeight);
 
-	//キーボードの初期化
-	m_keyboard = std::make_unique<Keyboard>();
+	m_Camera->SetKeyboard(keyboard.get());
 
 	//球の回転変数の初期化
 	rotateball = 0.0f;
@@ -267,7 +269,7 @@ void Game::Update(DX::StepTimer const& timer)
 	//タンクの移動処理
 	
 	//キーボードの状態取得処理
-	Keyboard::State kb = m_keyboard->GetState();
+	Keyboard::State kb = keyboard->GetState();
 
 	//Aキーが押されたら
 	if (kb.A)
@@ -373,7 +375,6 @@ void Game::Render()
 
 	//タンクモデルの描画
 	m_modeltank->Draw(m_d3dContext.Get(), m_states, tank_world, m_view, m_proj);
-
 
 	//ティーポットの描画
 	/*for (int i = 0; i < 20; i++)

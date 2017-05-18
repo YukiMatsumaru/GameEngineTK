@@ -124,7 +124,7 @@ private:
 	int frame;
 	
 	//キーボード
-	std::unique_ptr<DirectX::Keyboard> m_keyboard;
+	std::unique_ptr<DirectX::Keyboard> keyboard;
 
 	//自機の座標
 	DirectX::SimpleMath::Vector3 tank_pos;

@@ -5,15 +5,25 @@
 #pragma once
 
 #include "Camera.h"
+#include <Keyboard.h>
 
 class Followcamera :public Camera
 {
-private:
+protected:
 	//追従対象の座標
 	DirectX::SimpleMath::Vector3 m_targetpos;
 
 	//追従対象の回転角
 	float m_targetangle;
+
+	//FPSカメラフラグ
+	bool m_isFPS;
+
+	//キーボード
+	DirectX::Keyboard* m_keyboard;
+
+	//キーボード(トラッカー)
+	DirectX::Keyboard::KeyboardStateTracker m_KeyboardTracker;
 
 public:
 	//自機とカメラの距離
@@ -30,5 +40,8 @@ public:
 
 	//追従対象の角度をセット
 	void SetTargetAngle(float targetangle);
+
+	//キーボードをセット
+	void SetKeyboard(DirectX::Keyboard* keyboard);
 
 };
