@@ -31,12 +31,23 @@ void Game::Initialize(HWND window, int width, int height)
 
     CreateResources();
 
+
     // TODO: Change the timer settings if you want something other than the default variable timestep mode.
     // e.g. for 60 FPS fixed timestep update logic, call:
     /*
     m_timer.SetFixedTimeStep(true);
     m_timer.SetTargetElapsedSeconds(1.0 / 60);
     */
+
+	//キーボードの初期化
+	keyboard = std::make_unique<Keyboard>();
+
+	m_Camera = std::make_unique<Followcamera>(m_outputWidth, m_outputHeight);
+
+	m_Camera->SetKeyboard(keyboard.get());
+
+	//3Dオブジェクトの静的メンバを初期化
+	obj3d::InitializeStatic(m_d3dDevice, m_d3dContext, m_Camera.get());
 
 	//プリミティブバッチの初期化
 	m_batch = std::make_unique<PrimitiveBatch<VertexPositionNormal>>(m_d3dContext.Get());
@@ -80,19 +91,12 @@ void Game::Initialize(HWND window, int width, int height)
 
 	//モデルの読み込み
 	m_modelGround = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources/ground200m.cmo", *m_factory);
-	m_modelSkydome = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources/skydome.cmo", *m_factory);
+	m_objSkydome.LoadModel(L"Resources/skydome.cmo");
 	m_modelBall = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources/ball.cmo", *m_factory);
 
-	m_modelTeapot = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources/Teapot.cmo", *m_factory);
+	/*m_modelTeapot = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources/Teapot.cmo", *m_factory);
 
-	m_modeltank = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources/tanc.cmo", *m_factory);
-
-	//キーボードの初期化
-	keyboard = std::make_unique<Keyboard>();
-
-	m_Camera = std::make_unique<Followcamera>(m_outputWidth, m_outputHeight);
-
-	m_Camera->SetKeyboard(keyboard.get());
+	m_modeltank = Model::CreateFromCMO(m_d3dDevice.Get(), L"Resources/tanc.cmo", *m_factory);*/
 
 	//球の回転変数の初期化
 	rotateball = 0.0f;
@@ -136,6 +140,32 @@ void Game::Initialize(HWND window, int width, int height)
 
 	}
 
+	//自機パーツの読み込み
+	m_ObjPlayer.resize(PLAYER_PARTS_NUM);
+	m_ObjPlayer[PLAYER_PARTS_TANC].LoadModel(L"Resources/tanc.cmo");
+	m_ObjPlayer[PLAYER_PARTS_BODY].LoadModel(L"Resources/body.cmo");
+	m_ObjPlayer[PLAYER_PARTS_WEPON_L].LoadModel(L"Resources/wepon.cmo");
+	m_ObjPlayer[PLAYER_PARTS_WEPON_R].LoadModel(L"Resources/wepon.cmo");
+	m_ObjPlayer[PLAYER_PARTS_FACE].LoadModel(L"Resources/face.cmo");
+
+	//パーツの親子関係をセット
+	m_ObjPlayer[PLAYER_PARTS_BODY].SetParent(&m_ObjPlayer[PLAYER_PARTS_TANC]);
+	m_ObjPlayer[PLAYER_PARTS_WEPON_L].SetParent(&m_ObjPlayer[PLAYER_PARTS_BODY]);
+	m_ObjPlayer[PLAYER_PARTS_WEPON_R].SetParent(&m_ObjPlayer[PLAYER_PARTS_BODY]);
+	m_ObjPlayer[PLAYER_PARTS_FACE].SetParent(&m_ObjPlayer[PLAYER_PARTS_BODY]);
+
+	//親からのオフセット(座標ずらし分)をセット
+	m_ObjPlayer[PLAYER_PARTS_BODY].SetTranslation(Vector3(0.0f, 0.5f, 0.0f));
+	m_ObjPlayer[PLAYER_PARTS_BODY].SetScale(Vector3(0.8f, 0.8f, 0.8f));
+
+	m_ObjPlayer[PLAYER_PARTS_WEPON_L].SetTranslation(Vector3(-0.52f, 0.0f, -0.5f));
+	m_ObjPlayer[PLAYER_PARTS_WEPON_R].SetTranslation(Vector3(0.52f, 0.0f, -0.5f));
+
+	m_ObjPlayer[PLAYER_PARTS_FACE].SetTranslation(Vector3(0.0f, 0.0f, -0.45f));
+
+	//ボールカウントの初期化
+	ballcnt = 0;
+
 	//フレームカウントの初期化
 	frame = 0;
 
@@ -175,6 +205,8 @@ void Game::Update(DX::StepTimer const& timer)
 		m_view = m_Camera->GetView();
 		m_proj = m_Camera->GetProj();
 	}
+
+	m_objSkydome.Update();
 	
 	/*//視点
 	Vector3 eyepos(0,0,5.0f);
@@ -266,7 +298,16 @@ void Game::Update(DX::StepTimer const& timer)
 	//フレームを増やす
 	frame++;
 
-	//タンクの移動処理
+	//自機パーツのギミック
+	{
+		//Vector3 angle = m_ObjPlayer[PLAYER_PARTS_HEAD].GetRotation();
+		//m_ObjPlayer[PLAYER_PARTS_HEAD].SetRotation(angle += Vector3(0, 0.01f, 0));
+
+		//Vector3 pos = m_ObjPlayer[PLAYER_PARTS_HEAD].GetTranslation();
+		//m_ObjPlayer[PLAYER_PARTS_HEAD].SetRotation(pos += Vector3(0, 0.01f, 0));
+
+
+	}
 	
 	//キーボードの状態取得処理
 	Keyboard::State kb = keyboard->GetState();
@@ -275,28 +316,34 @@ void Game::Update(DX::StepTimer const& timer)
 	if (kb.A)
 	{
 		//自機の角度を変更
-		tank_angle += 0.03f;
+		//tank_angle += 0.03f;
+		float angle = m_ObjPlayer[0].GetRotation().y;
+		m_ObjPlayer[0].SetRotation(Vector3(0, angle+0.03f, 0));
 	}
 
 	//Dキーが押されたら
 	if (kb.D)
 	{
 		//自機の角度を変更
-		tank_angle -= 0.03f;
+		float angle = m_ObjPlayer[0].GetRotation().y;
+		m_ObjPlayer[0].SetRotation(Vector3(0, angle - 0.03f, 0));
 	}
 
 	//Wキーが押されたら
 	if (kb.W)
 	{
-		//移動ベクトル(Z座標前進)
+		//移動ベクトル(Z座標後退)
 		Vector3 moveV(0, 0, -0.1f);
 
 		//移動量ベクトルを自機の角度分回転させる
-		rotmat = Matrix::CreateRotationY(tank_angle);
+		float angle = m_ObjPlayer[0].GetRotation().y;
+		rotmat = Matrix::CreateRotationY(angle);
 		moveV = Vector3::TransformNormal(moveV, rotmat);
 
 		//自機の座標を移動
-		tank_pos += moveV;
+		//tank_pos += moveV;
+		Vector3 pos = m_ObjPlayer[0].GetTranslation();
+		m_ObjPlayer[0].SetTranslation(pos + moveV);
 	}
 
 	//Sキーが押されたら
@@ -306,20 +353,78 @@ void Game::Update(DX::StepTimer const& timer)
 		Vector3 moveV(0, 0, 0.1f);
 
 		//移動量ベクトルを自機の角度分回転させる
-		rotmat = Matrix::CreateRotationY(tank_angle);
+		float angle = m_ObjPlayer[0].GetRotation().y;
+		rotmat = Matrix::CreateRotationY(angle);
 		moveV = Vector3::TransformNormal(moveV, rotmat);
 
 		//自機の座標を移動
-		tank_pos += moveV;
+		//tank_pos += moveV;
+		Vector3 pos = m_ObjPlayer[0].GetTranslation();
+		m_ObjPlayer[0].SetTranslation(pos + moveV);
+	}
+
+	//スペースキーを押したら
+	if (kb.Space)
+	{
+		m_Ball.push_back(new obj3d);
+		m_Ball[ballcnt]->LoadModel(L"Resources/k_ball.cmo");
+
+		Vector3 pos;
+
+		pos = m_ObjPlayer[PLAYER_PARTS_FACE].GetTranslation() + m_ObjPlayer[PLAYER_PARTS_BODY].GetTranslation() + m_ObjPlayer[PLAYER_PARTS_TANC].GetTranslation();
+
+		m_Ball[ballcnt]->SetTranslation(pos);
+
+		Vector3 angle;
+		angle = m_ObjPlayer[PLAYER_PARTS_TANC].GetRotation();
+
+		m_Ball[ballcnt]->SetRotation(angle);
+
+		Vector3 moveV(0.0f, 0.5f,-1.0f);
+
+		moveV = Vector3::TransformNormal(moveV, Matrix::CreateRotationY(angle.y));
+
+		m_Ball[ballcnt]->SetTranslation(pos + moveV);
+
+		ballcnt++;
+
+		/*Vector3 scale;
+		Quaternion rotq;
+		Vector3 pos;*/
+
+		//m_ObjPlayer[PLAYER_PARTS_FACE].GetWorld().Decompose(scale, rotq, pos);
+
 	}
 
 	{//自機のワールド行列の計算
-		rotmat = Matrix::CreateRotationY(tank_angle);
+		//パーツ1(親)
+		Matrix rotmat = Matrix::CreateRotationY(tank_angle);
 
 		Matrix transmat = Matrix::CreateTranslation(tank_pos);
 
 		//ワールド行列を合成
-		tank_world = rotmat * transmat;
+		/*tank_world = rotmat * transmat;
+
+		//パーツ2(子)
+		Matrix rotmat2 = Matrix::CreateRotationZ(XM_PIDIV2) * Matrix::CreateRotationY(0);
+
+		Matrix transmat2 = Matrix::CreateTranslation(Vector3(0, 0.5f, 0));
+		
+		//ワールド行列を合成
+		tank_world2 = rotmat2 * transmat2 * tank_world;*/
+
+	}
+
+	for (std::vector<obj3d>::iterator it = m_ObjPlayer.begin(); it != m_ObjPlayer.end(); it++)
+	{
+		it->Update();
+	}
+
+	//ボールのUpdate
+	for (int i = 0; i < ballcnt; i++)
+	{
+
+		m_Ball[i]->Update();
 
 	}
 }
@@ -360,7 +465,7 @@ void Game::Render()
 	m_d3dContext->OMSetDepthStencilState(m_states.DepthNone(), 0);
 	m_d3dContext->RSSetState(m_states.CullNone());
 
-	m_effect->SetWorld(m_world);
+	//m_effect->SetWorld(m_world);
 	m_effect->SetView(m_view);
 	m_effect->SetProjection(m_proj);
 
@@ -371,10 +476,24 @@ void Game::Render()
 	m_modelGround->Draw(m_d3dContext.Get(),m_states,Matrix::Identity,m_view,m_proj);
 
 	//天球モデルの描画
-	m_modelSkydome->Draw(m_d3dContext.Get(), m_states,Matrix::Identity, m_view, m_proj);
+	m_objSkydome.Draw();
 
+	//モデルの描画
+	for (std::vector<obj3d>::iterator it = m_ObjPlayer.begin();it !=m_ObjPlayer.end();it++)
+	{
+		it->Draw();
+	}
+
+	//ボールの描画
+	for (int i = 0; i < ballcnt; i++)
+	{
+  		m_Ball[i]->Draw();
+	}
+
+	//m_ObjPlayer.Draw();
+	
 	//タンクモデルの描画
-	m_modeltank->Draw(m_d3dContext.Get(), m_states, tank_world, m_view, m_proj);
+	//m_ObjPlayer2.Draw();
 
 	//ティーポットの描画
 	/*for (int i = 0; i < 20; i++)

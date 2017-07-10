@@ -27,42 +27,41 @@ void Followcamera::Update()
 	m_KeyboardTracker.Update(keyboardstate);
 
 	//Cキーを押すごとにTPSとFPSの切り替え
-	if (m_KeyboardTracker.IsKeyPressed(Keyboard::Keys::C))
+	/*if (m_KeyboardTracker.IsKeyPressed(Keyboard::Keys::C))
 	{
 		//フラグの切り替え
 		m_isFPS = !m_isFPS;
 
-	}
+	}*/
 
 	//視点、参照点
 	Vector3 eyepos, refpos;
-	if(m_isFPS)
-	{//TPSカメラ処理
+	//if(m_isFPS)
+	//TPSカメラ処理
 
-		//自機の上空2mを参照点とする
-		refpos = m_targetpos + Vector3(0, 2.0f, 0);
+	//自機の上空2mを参照点とする
+	refpos = m_targetpos + Vector3(0, 2.0f, 0);
 
-		//参照点と視点の差分ベクトル
-		Vector3 cameraV(0, 0, CAMERA_DISTANCE);
+	//参照点と視点の差分ベクトル
+	Vector3 cameraV(0, 0, CAMERA_DISTANCE);
 
-		//自機の後ろに回り込むための回転行列の生成
-		Matrix rotmat = Matrix::CreateRotationY(m_targetangle);
+	//自機の後ろに回り込むための回転行列の生成
+	Matrix rotmat = Matrix::CreateRotationY(m_targetangle);
 
-		//差分ベクトルを回転させる
-		cameraV = Vector3::TransformNormal(cameraV, rotmat);
+	//差分ベクトルを回転させる
+	cameraV = Vector3::TransformNormal(cameraV, rotmat);
 
-		//視点座標を計算
-		eyepos = refpos + cameraV;
+	//視点座標を計算
+	eyepos = refpos + cameraV;
 
-		//視点を現在位置から補間する
-		eyepos = m_eyepos + (eyepos - m_eyepos) * 0.05f;
+	//視点を現在位置から補間する
+	eyepos = m_eyepos + (eyepos - m_eyepos) * 0.05f;
 
-		//参照点を現在位置から補間する
-		refpos = m_refpos + (refpos - m_refpos) * 0.2f;
+	//参照点を現在位置から補間する
+	refpos = m_refpos + (refpos - m_refpos) * 0.2f;
 
-	}
-	else
-	{//FPSカメラ処理
+	
+	/*{//FPSカメラ処理
 		 //自機の目の位置当たりを視点とする
 		 Vector3 position;
 		 position = m_targetpos + Vector3(0, 0.2f, 0);
@@ -81,7 +80,7 @@ void Followcamera::Update()
 
 		 //参照点座標を計算
 		 refpos = position + cameraV;
-	}
+	}*/
 
 	//カメラに情報をセット
 	SetEyepos(eyepos);

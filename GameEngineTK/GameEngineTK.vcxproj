@@ -166,6 +166,7 @@
     <ClInclude Include="DebugCamera.h" />
     <ClInclude Include="Followcamera.h" />
     <ClInclude Include="Game.h" />
+    <ClInclude Include="obj3d.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="StepTimer.h" />
   </ItemGroup>
@@ -175,6 +176,7 @@
     <ClCompile Include="Followcamera.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="obj3d.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -198,11 +200,15 @@
   </ItemGroup>
   <ItemGroup>
     <MeshContentTask Include="Assets\ball.FBX" />
+    <MeshContentTask Include="Assets\body.FBX" />
+    <MeshContentTask Include="Assets\face.FBX" />
     <MeshContentTask Include="Assets\ground1m.FBX" />
     <MeshContentTask Include="Assets\ground200m.FBX" />
+    <MeshContentTask Include="Assets\k_ball.FBX" />
     <MeshContentTask Include="Assets\skydome.FBX" />
     <MeshContentTask Include="Assets\tanc.FBX" />
     <MeshContentTask Include="Assets\Teapot.FBX" />
+    <MeshContentTask Include="Assets\wepon.FBX" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

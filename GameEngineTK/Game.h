@@ -14,14 +14,28 @@
 #include <SimpleMath.h>
 #include <Model.h>
 #include <Keyboard.h>
+#include <vector>
 
 #include "FollowCamera.h"
+#include "obj3d.h"
 
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
 class Game
 {
 public:
+
+	//自機パーツ
+	enum PLAYER_PARTS
+	{
+		PLAYER_PARTS_TANC,
+		PLAYER_PARTS_BODY,
+		PLAYER_PARTS_WEPON_L,
+		PLAYER_PARTS_WEPON_R,
+		PLAYER_PARTS_FACE,
+		
+		PLAYER_PARTS_NUM,
+	};
 
     Game();
 
@@ -77,7 +91,7 @@ private:
 	std::unique_ptr<DirectX::BasicEffect> m_effect;
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> m_inputLayout;
 
-	DirectX::SimpleMath::Matrix m_world;
+	//DirectX::SimpleMath::Matrix m_world;
 	DirectX::SimpleMath::Matrix m_view;
 	DirectX::SimpleMath::Matrix m_proj;
 
@@ -91,16 +105,16 @@ private:
 	std::unique_ptr<DirectX::Model> m_modelGround;
 
 	//天球モデル
-	std::unique_ptr<DirectX::Model> m_modelSkydome;
+	obj3d m_objSkydome;
 
 	//球モデル
 	std::unique_ptr<DirectX::Model> m_modelBall;
 
 	//ティーポットモデル
-	std::unique_ptr<DirectX::Model> m_modelTeapot;
+	//std::unique_ptr<DirectX::Model> m_modelTeapot;
 
 	//タンクモデル
-	std::unique_ptr<DirectX::Model> m_modeltank;
+	//std::unique_ptr<DirectX::Model> m_modeltank;
 
 	//ワールド行列
 	DirectX::SimpleMath::Matrix m_worldBall[20];
@@ -122,7 +136,10 @@ private:
 
 	//フレームカウント
 	int frame;
-	
+
+	//ボールカウント
+	int ballcnt;
+
 	//キーボード
 	std::unique_ptr<DirectX::Keyboard> keyboard;
 
@@ -133,7 +150,19 @@ private:
 	float tank_angle;
 
 	//自機のワールド行列
-	DirectX::SimpleMath::Matrix tank_world;
+	//DirectX::SimpleMath::Matrix tank_world;
+
+	//DirectX::SimpleMath::Matrix tank_world2;
+
+	//自機の３Dオブジェクト
+	std::vector<obj3d> m_ObjPlayer;
+
+	//ボールのオブジェクト
+	std::vector<obj3d*> m_Ball;
+
+	//obj3d m_ObjPlayer2;
+
+	//std::vector<obj3d>m_ObjPlayer;
 
 	DirectX::SimpleMath::Matrix scalemat;
 
